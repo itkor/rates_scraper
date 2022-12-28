@@ -62,9 +62,12 @@ ROBOTSTXT_OBEY = False
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'rates_parser.pipelines.RatesParserPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'rates_parser.pipelines.RatesParserPipeline': 300,
+}
+MONGO_URI = 'mongodb://localhost:27017'
+MONGO_DATABASE = 'rates'
+
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

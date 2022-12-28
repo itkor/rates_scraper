@@ -6,7 +6,10 @@
 import scrapy
 
 
-class RatesParserItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class RatesItem(scrapy.Item):
+    operation_category = scrapy.Field() #(exchange offices, smartbank ... )
+    operation_type = scrapy.Field() # (buy / sell)
+    currency = scrapy.Field() # USD, EUR
+    currency_description = scrapy.Field() # U.S. dollars
+    rate = scrapy.Field() # The rate value
+    timestamp = scrapy.Field()
