@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.
 from rates_parser.items import RatesItem
 import scrapy
 import logging
+from datetime import datetime, timezone
 
 from scrapy.spidermiddlewares.httperror import HttpError
 from twisted.internet.error import DNSLookupError
@@ -76,7 +77,7 @@ class RatesSpider(scrapy.Spider):
                 error_logger.error(f"Error in the path for exchange-table")
 
             # Getting timestamp for the data
-            timestamp = time.time()
+            timestamp = datetime.now(timezone.utc)
 
             operation_category = ''
             if i in [1,2]:

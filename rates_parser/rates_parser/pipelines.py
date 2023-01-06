@@ -5,9 +5,8 @@
 import pymongo
 import logging
 import re
+import psycopg2
 
-# useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
 
 # setting up mongo db and collections ===============================
 mongo_uri = 'mongodb://localhost:27017/'
@@ -38,7 +37,7 @@ error_logger = setup_logger('error_logger', 'ratescrawler_error.log')
 # stat logger
 stat_logger = setup_logger('stat_logger', 'ratescrawler_stat.log')
 
-class RatesParserPipeline:
+class MongoPipeline:
     collection_name = 'rates'
 
     def __init__(self, mongo_uri, mongo_db):
@@ -91,3 +90,95 @@ class RatesParserPipeline:
         ## clean up when spider is closed
         self.client.close()
 
+class PostgresPipeline:
+
+
+
+    def __init__(self, hostname, username, password, database):
+
+        self.hostname = hostname
+        self.username = username
+        self.password = password
+        self.database = database
+
+        ## Create/Connect to database
+        self.connection = psycopg2.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
+
+        ## Create cursor, used to execute commands
+        self.cur = self.connection.cursor()
+
+        ## Create quotes table if none exists
+        self.cur.execute("""
+        CREATE TABLE IF NOT EXISTS rates_raw(
+            operation_category VARCHAR(25), 
+            operation_type VARCHAR(25),
+            currency VARCHAR(10),
+            currency_description VARCHAR(25),
+            rate FLOAT(4), 
+            ts timestamp,
+            id SERIAL PRIMARY KEY
+        )
+        """)
+        # PRIMARY KEY(currency,operation_category, ts),
+        # CONSTRAINT no_duplicate_tag UNIQUE (currency,operation_category, ts)
+    def preprocess(self, item):
+        '''
+        Simple cleaning of data
+        :param item:
+        :return: item
+        '''
+        try:
+            item['rate'] = item['rate'].replace(',','.')
+        except Exception as e:
+            error_logger.error(f"Error while cleaning 'rate' value: {item['rate']}")
+
+        # Leave only digits and dots
+        item['rate'] = re.sub("[^0-9.]", "", item['rate'])
+        try:
+            item['rate'] = float(item['rate'])
+        except Exception as e:
+            error_logger.error(f"Error while converting 'rate' value: {item['rate']}")
+
+        return item
+
+    def process_item(self, item, spider):
+        # print(dict(item))
+        # TODO: Add exception handling. Notifications of errors
+        item = self.preprocess(item)
+
+
+        print(item)
+        ## Define insert statement
+        self.cur.execute(""" insert into rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )
+         values (%s,%s,%s,%s,%s,%s)""", (
+            str(item["operation_category"]),
+            str(item["operation_type"]),
+            str(item["currency"]),
+            str(item["currency_description"]),
+            item["rate"],
+            item["timestamp"]
+        ))
+
+        ## Execute insert of data into database
+        self.connection.commit()
+
+        return item
+    @classmethod
+    def from_crawler(cls, crawler):
+        ## pull in information from settings.py
+        return cls(
+            hostname = crawler.settings.get('PG_HOSTNAME'),
+            username = crawler.settings.get('PG_USERNAME'),
+            password = crawler.settings.get('PG_PASS'),
+            database = crawler.settings.get('PG_DB'),
+        )
+    def open_spider(self, spider):
+        ## initializing spider
+        ## opening db connection
+        # TODO: Add exception handling. Notifications of errors
+        pass
+
+    def close_spider(self, spider):
+        ## Close cursor & connection to database
+        self.cur.close()
+        self.connection.close()

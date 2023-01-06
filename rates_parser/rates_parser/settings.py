@@ -63,11 +63,19 @@ ROBOTSTXT_OBEY = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'rates_parser.pipelines.RatesParserPipeline': 300,
+   # 'rates_parser.pipelines.MongoPipeline': 300,
+   'rates_parser.pipelines.PostgresPipeline': 300,
 }
+
+# MongoDB Settings
 MONGO_URI = 'mongodb://localhost:27017'
 MONGO_DATABASE = 'rates'
 
+# Postgres Settings
+PG_HOSTNAME = 'localhost'
+PG_USERNAME = 'pgadmin'
+PG_PASS = 'pgadminpass'
+PG_DB = 'ratesdb'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
