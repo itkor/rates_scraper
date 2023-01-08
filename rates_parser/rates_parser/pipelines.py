@@ -6,6 +6,8 @@ import pymongo
 import logging
 import re
 import psycopg2
+from scrapy.exceptions import CloseSpider
+
 
 
 # setting up mongo db and collections ===============================
@@ -101,8 +103,12 @@ class PostgresPipeline:
         self.password = password
         self.database = database
 
-        ## Create/Connect to database
-        self.connection = psycopg2.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
+        try:
+            ## Create/Connect to database
+            self.connection = psycopg2.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
+        except Exception as e:
+            error_logger.error(f"Error while connecting to Postgres at: {self.hostname}")
+            raise CloseSpider(f"Error while connecting to Postgres at: {self.hostname}")
 
         ## Create cursor, used to execute commands
         self.cur = self.connection.cursor()
@@ -146,8 +152,6 @@ class PostgresPipeline:
         # TODO: Add exception handling. Notifications of errors
         item = self.preprocess(item)
 
-
-        print(item)
         ## Define insert statement
         self.cur.execute(""" insert into rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )
          values (%s,%s,%s,%s,%s,%s)""", (

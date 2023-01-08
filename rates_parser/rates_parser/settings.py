@@ -1,4 +1,7 @@
 # Scrapy settings for rates_parser project
+
+import os
+
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -72,10 +75,17 @@ MONGO_URI = 'mongodb://localhost:27017'
 MONGO_DATABASE = 'rates'
 
 # Postgres Settings
-PG_HOSTNAME = 'localhost'
-PG_USERNAME = 'pgadmin'
-PG_PASS = 'pgadminpass'
-PG_DB = 'ratesdb'
+PG_HOSTNAME = os.environ.get('PG_HOSTNAME')
+PG_USERNAME = os.environ.get('POSTGRES_USER')
+PG_PASS = os.environ.get('POSTGRES_PASSWORD')
+PG_DB = os.environ.get('POSTGRES_DB')
+
+if not (PG_HOSTNAME or PG_USERNAME or PG_PASS or PG_DB):
+   PG_HOSTNAME = 'localhost'
+   PG_USERNAME = 'pgadmin'
+   PG_PASS = 'pgadminpass'
+   PG_DB = 'ratesdb'
+
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

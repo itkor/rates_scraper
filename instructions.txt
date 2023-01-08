@@ -1,0 +1,31 @@
+Run Postgres container
+docker-compose  -f rates_parser/docker-compose.yml up
+
+Recreate Postgreq container
+docker-compose  -f rates_parser/docker-compose.yml up --force-recreate --build
+
+Activate virtual environment
+venv\Scripts\activate
+
+Run Scrapy parser
+scrapy crawl ratescrawler
+
+PgAdmin Address
+http://127.0.0.1:5050/
+
+PgAdmin
+Pass 123
+
+Airflow address
+http://127.0.0.1:8080/
+
+
+
+
+
+
+
+
+
+
+
