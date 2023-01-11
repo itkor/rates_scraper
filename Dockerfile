@@ -1,5 +1,5 @@
 # Start from python slim-buster docker image, change python version as desired.
-FROM python:3.8-buster
+FROM python:3.8
 RUN apt-get update
 # Copy files to working directory
 COPY ./rates_parser /app/rates_parser
