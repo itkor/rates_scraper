@@ -96,7 +96,6 @@ class RatesSpider(scrapy.Spider):
                 operation_type = 'Buy'
 
             rates_composite_list = [rates_lst[x:x+3] for x in range(0, len(rates_lst),3)]
-            print(rates_composite_list)
             for currency_record in rates_composite_list:
                 rate_record_item['operation_category'] = operation_category
                 rate_record_item['operation_type'] = operation_type
@@ -105,9 +104,6 @@ class RatesSpider(scrapy.Spider):
                 rate_record_item['rate'] = currency_record[2]
 
                 rate_record_item['timestamp']=timestamp
-
-                # info_logger.info(rate_record_item)
-                print(rate_record_item)
 
                 yield rate_record_item
 

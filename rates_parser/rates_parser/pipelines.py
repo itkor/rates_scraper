@@ -67,7 +67,6 @@ class MongoPipeline:
         return item
 
     def process_item(self, item, spider):
-        # print(dict(item))
         # TODO: Add exception handling. Notifications of errors
         item = self.preprocess(item)
         self.db[self.collection_name].insert_one(dict(item))
@@ -145,7 +144,6 @@ class PostgresPipeline:
         return item
 
     def process_item(self, item, spider):
-        # print(dict(item))
         # TODO: Add exception handling. Notifications of errors
         item = self.preprocess(item)
 
