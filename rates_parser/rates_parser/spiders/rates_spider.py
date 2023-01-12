@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import sys
-import time
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from rates_parser.items import RatesItem

@@ -75,10 +75,10 @@ MONGO_URI = 'mongodb://localhost:27017'
 MONGO_DATABASE = 'rates'
 
 # Postgres Settings
-PG_HOSTNAME = os.environ.get('PG_HOSTNAME')
-PG_USERNAME = os.environ.get('POSTGRES_USER')
-PG_PASS = os.environ.get('POSTGRES_PASSWORD')
-PG_DB = os.environ.get('POSTGRES_DB')
+PG_HOSTNAME = os.environ.get('MAIN_PG_HOSTNAME')
+PG_USERNAME = os.environ.get('MAIN_PG_USER')
+PG_PASS = os.environ.get('MAIN_PG_PASSWORD')
+PG_DB = os.environ.get('MAIN_PG_DB')
 
 if not (PG_HOSTNAME or PG_USERNAME or PG_PASS or PG_DB):
    PG_HOSTNAME = 'localhost'

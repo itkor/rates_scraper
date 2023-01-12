@@ -93,9 +93,6 @@ class MongoPipeline:
         self.client.close()
 
 class PostgresPipeline:
-
-
-
     def __init__(self, hostname, username, password, database):
 
         self.hostname = hostname
