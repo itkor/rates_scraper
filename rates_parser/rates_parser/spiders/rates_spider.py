@@ -25,11 +25,11 @@ def setup_logger(name, log_file, level=logging.INFO):
 # Setting up logging =============================================
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 # info logger
-info_logger = setup_logger('info_logger', 'ratescrawler_info.log')
+info_logger = setup_logger('info_logger', f'ratescrawler_info_{datetime.now()}.log')
 # error  logger
-error_logger = setup_logger('error_logger', 'ratescrawler_error.log')
+error_logger = setup_logger('error_logger', f'ratescrawler_error_{datetime.now()}.log')
 # stat logger
-stat_logger = setup_logger('stat_logger', 'ratescrawler_stat.log')
+stat_logger = setup_logger('stat_logger', f'ratescrawler_stat_{datetime.now()}.log')
 
 class RatesSpider(scrapy.Spider):
     name = "ratescrawler"

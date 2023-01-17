@@ -1,8 +1,8 @@
 Run Postgres container
-docker-compose  -f rates_parser/docker-compose.yml up
+docker-compose  -f docker-compose.yml up
 
 Recreate Postgreq container
-docker-compose  -f rates_parser/docker-compose.yml up --force-recreate --build
+docker-compose  -f docker-compose.yml up --force-recreate --build
 
 Activate virtual environment
 venv\Scripts\activate

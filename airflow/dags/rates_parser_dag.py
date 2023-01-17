@@ -1,8 +1,15 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
+from airflow.operators.docker_operator import DockerOperator
+import os
 
 from datetime import datetime
 from datetime import timedelta
+
+MAIN_PG_HOSTNAME = os.environ.get('MAIN_PG_HOSTNAME')
+MAIN_PG_USER = os.environ.get('MAIN_PG_USER')
+MAIN_PG_PASSWORD = os.environ.get('MAIN_PG_PASSWORD')
+MAIN_PG_DB = os.environ.get('MAIN_PG_DB')
 
 with DAG(
         dag_id='rates_parser_dag',
@@ -10,9 +17,17 @@ with DAG(
         catchup=False,
         schedule_interval=timedelta(hours=4)
 ) as dag:
-    scrapy_parser_task = BashOperator(
-            task_id='scrapy',
-            bash_command='source /opt/env/bin/activate && cd /opt/airflow/rates_parser/ && scrapy crawl ratescrawler')
-
+    scrapy_parser_task = DockerOperator(
+        task_id='scrapy_crawl',
+        image='scraper:v1',
+        container_name='rates_crawler',
+        environment={'MAIN_PG_HOSTNAME': MAIN_PG_HOSTNAME, 'MAIN_PG_USER': MAIN_PG_USER,
+                     'MAIN_PG_PASSWORD': MAIN_PG_PASSWORD, 'MAIN_PG_DB': MAIN_PG_DB},
+        api_version='auto',
+        auto_remove=True,
+        command="scrapy crawl ratescrawler",
+        docker_url="unix://var/run/docker.sock",
+        network_mode="rates_scraper_postgres_main"
+    )
 
 scrapy_parser_task

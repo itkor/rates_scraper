@@ -82,7 +82,7 @@ PG_PASS = os.environ.get('MAIN_PG_PASSWORD')
 PG_DB = os.environ.get('MAIN_PG_DB')
 
 if not (PG_HOSTNAME or PG_USERNAME or PG_PASS or PG_DB):
-   PG_HOSTNAME = 'localhost'
+   PG_HOSTNAME = 'postgres_main_db'
    PG_USERNAME = 'pgadmin'
    PG_PASS = 'pgadminpass'
    PG_DB = 'ratesdb'

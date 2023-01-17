@@ -2,23 +2,13 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+from datetime import datetime
+
 import pymongo
 import logging
 import re
 import psycopg2
 from scrapy.exceptions import CloseSpider
-
-
-
-# setting up mongo db and collections ===============================
-mongo_uri = 'mongodb://localhost:27017/'
-mongo_db = 'currency_rates'
-
-client = pymongo.MongoClient(mongo_uri)
-db = client[mongo_db]
-collection_name = 'rates'
-loc_collection = db[collection_name]
-
 
 def setup_logger(name, log_file, level=logging.INFO):
     handler = logging.FileHandler(log_file)
@@ -33,14 +23,22 @@ def setup_logger(name, log_file, level=logging.INFO):
 # Setting up logging =============================================
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 # info logger
-info_logger = setup_logger('info_logger', 'ratescrawler_info.log')
+info_logger = setup_logger('info_logger', f'ratescrawler_info_{datetime.now()}.log')
 # error  logger
-error_logger = setup_logger('error_logger', 'ratescrawler_error.log')
+error_logger = setup_logger('error_logger', f'ratescrawler_error_{datetime.now()}.log')
 # stat logger
-stat_logger = setup_logger('stat_logger', 'ratescrawler_stat.log')
+stat_logger = setup_logger('stat_logger', f'ratescrawler_stat_{datetime.now()}.log')
 
 class MongoPipeline:
+
+    # setting up mongo db and collections ===============================
+    mongo_uri = 'mongodb://localhost:27017/'
+    mongo_db = 'currency_rates'
+
+    client = pymongo.MongoClient(mongo_uri)
+    db = client[mongo_db]
     collection_name = 'rates'
+    loc_collection = db[collection_name]
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
