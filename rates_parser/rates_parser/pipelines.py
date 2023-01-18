@@ -7,28 +7,11 @@ from datetime import datetime
 import pymongo
 import logging
 import re
-import psycopg2
+import psycopg as psycopg2
 from scrapy.exceptions import CloseSpider
+from PostgresLogger import PostgresHandler
 
-def setup_logger(name, log_file, level=logging.INFO):
-    handler = logging.FileHandler(log_file)
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
-
-# Setting up logging =============================================
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# info logger
-info_logger = setup_logger('info_logger', f'ratescrawler_info_{datetime.now()}.log')
-# error  logger
-error_logger = setup_logger('error_logger', f'ratescrawler_error_{datetime.now()}.log')
-# stat logger
-stat_logger = setup_logger('stat_logger', f'ratescrawler_stat_{datetime.now()}.log')
-
+default_logger = logging.getLogger(__name__)
 class MongoPipeline:
 
     # setting up mongo db and collections ===============================
@@ -44,6 +27,8 @@ class MongoPipeline:
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
 
+        self.logger = PostgresHandler()
+
     def preprocess(self, item):
         '''
         Simple cleaning of data
@@ -53,14 +38,14 @@ class MongoPipeline:
         try:
             item['rate'] = item['rate'].replace(',','.')
         except Exception as e:
-            error_logger.error(f"Error while cleaning 'rate' value: {item['rate']}")
+            self.logger.log_error(f"Error while cleaning 'rate' value: {item['rate']}")
 
         # Leave only digits and dots
         item['rate'] = re.sub("[^0-9.]", "", item['rate'])
         try:
             item['rate'] = float(item['rate'])
         except Exception as e:
-            error_logger.error(f"Error while converting 'rate' value: {item['rate']}")
+            self.logger.log_error(f"Error while converting 'rate' value: {item['rate']}")
 
         return item
 
@@ -80,6 +65,9 @@ class MongoPipeline:
         )
     def open_spider(self, spider):
         ## initializing spider
+        ## opening db connection to LOGS database
+        # self.logger.connect()
+
         ## opening db connection
         # TODO: Add exception handling. Notifications of errors
         self.client = pymongo.MongoClient(self.mongo_uri)
@@ -89,27 +77,33 @@ class MongoPipeline:
         ## clean up when spider is closed
         self.client.close()
 
+        ## Close cursor & connection to LOGS database
+        # self.logger.disconnect()
+
 class PostgresPipeline:
-    def __init__(self, hostname, username, password, database):
+    def __init__(self, hostname, username, password, database, log_database):
 
         self.hostname = hostname
         self.username = username
         self.password = password
         self.database = database
+        self.log_database = log_database
 
         try:
             ## Create/Connect to database
             self.connection = psycopg2.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
         except Exception as e:
-            error_logger.error(f"Error while connecting to Postgres at: {self.hostname}")
+            default_logger.error(f"Error while connecting to Postgres at: {self.hostname}")
             raise CloseSpider(f"Error while connecting to Postgres at: {self.hostname}")
+
+        self.logger = PostgresHandler(hostname,username,password,log_database, self.connection)
 
         ## Create cursor, used to execute commands
         self.cur = self.connection.cursor()
 
         ## Create quotes table if none exists
         self.cur.execute("""
-        CREATE TABLE IF NOT EXISTS rates_raw(
+        CREATE TABLE IF NOT EXISTS public.rates_raw(
             operation_category VARCHAR(25), 
             operation_type VARCHAR(25),
             currency VARCHAR(10),
@@ -130,14 +124,14 @@ class PostgresPipeline:
         try:
             item['rate'] = item['rate'].replace(',','.')
         except Exception as e:
-            error_logger.error(f"Error while cleaning 'rate' value: {item['rate']}")
+            self.logger.log_error(f"Error while cleaning 'rate' value: {item['rate']}")
 
         # Leave only digits and dots
         item['rate'] = re.sub("[^0-9.]", "", item['rate'])
         try:
             item['rate'] = float(item['rate'])
         except Exception as e:
-            error_logger.error(f"Error while converting 'rate' value: {item['rate']}")
+            self.logger.log_error(f"Error while converting 'rate' value: {item['rate']}")
 
         return item
 
@@ -145,8 +139,10 @@ class PostgresPipeline:
         # TODO: Add exception handling. Notifications of errors
         item = self.preprocess(item)
 
+        self.logger.log_info(f"Item was preprocessed: {item}")
+
         ## Define insert statement
-        self.cur.execute(""" insert into rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )
+        self.cur.execute(""" insert into public.rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )
          values (%s,%s,%s,%s,%s,%s)""", (
             str(item["operation_category"]),
             str(item["operation_type"]),
@@ -158,7 +154,6 @@ class PostgresPipeline:
 
         ## Execute insert of data into database
         self.connection.commit()
-
         return item
     @classmethod
     def from_crawler(cls, crawler):
@@ -168,14 +163,20 @@ class PostgresPipeline:
             username = crawler.settings.get('PG_USERNAME'),
             password = crawler.settings.get('PG_PASS'),
             database = crawler.settings.get('PG_DB'),
+            log_database = crawler.settings.get('PG_LOGS_DB')
         )
     def open_spider(self, spider):
         ## initializing spider
-        ## opening db connection
+        ## opening db connection to LOGS database
+        # self.logger.connect()
         # TODO: Add exception handling. Notifications of errors
         pass
 
     def close_spider(self, spider):
+        # ## Close cursor & connection to LOGS database
+        # self.logger.disconnect()
+
         ## Close cursor & connection to database
         self.cur.close()
         self.connection.close()
+

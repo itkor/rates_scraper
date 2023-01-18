@@ -10,6 +10,7 @@ MAIN_PG_HOSTNAME = os.environ.get('MAIN_PG_HOSTNAME')
 MAIN_PG_USER = os.environ.get('MAIN_PG_USER')
 MAIN_PG_PASSWORD = os.environ.get('MAIN_PG_PASSWORD')
 MAIN_PG_DB = os.environ.get('MAIN_PG_DB')
+MAIN_PG_LOGS_DB = os.environ.get('MAIN_PG_LOGS_DB')
 
 with DAG(
         dag_id='rates_parser_dag',
@@ -22,7 +23,8 @@ with DAG(
         image='scraper:v1',
         container_name='rates_crawler',
         environment={'MAIN_PG_HOSTNAME': MAIN_PG_HOSTNAME, 'MAIN_PG_USER': MAIN_PG_USER,
-                     'MAIN_PG_PASSWORD': MAIN_PG_PASSWORD, 'MAIN_PG_DB': MAIN_PG_DB},
+                     'MAIN_PG_PASSWORD': MAIN_PG_PASSWORD, 'MAIN_PG_DB': MAIN_PG_DB,
+                     'MAIN_PG_LOGS_DB': MAIN_PG_LOGS_DB},
         api_version='auto',
         auto_remove=True,
         command="scrapy crawl ratescrawler",

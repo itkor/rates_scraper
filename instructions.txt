@@ -1,8 +1,15 @@
 Run Postgres container
 docker-compose  -f docker-compose.yml up
 
-Recreate Postgreq container
+Recreate all containers
 docker-compose  -f docker-compose.yml up --force-recreate --build
+
+Stop containers and remove named volumes declared in the `volumes`
+section of the Compose file and anonymous volumes attached to containers.
+docker-compose down --volumes
+
+Stop containers and Remove containers for services not defined in the Compose file.
+docker-compose down --remove-orphans
 
 Activate virtual environment
 venv\Scripts\activate
