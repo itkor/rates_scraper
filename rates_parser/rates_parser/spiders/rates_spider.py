@@ -4,56 +4,43 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from rates_parser.items import RatesItem
 import scrapy
-import logging
 from datetime import datetime, timezone
-
+from rates_parser.PostgresLogger import PostgresHandler
+import logging
 from scrapy.spidermiddlewares.httperror import HttpError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import TimeoutError
+from scrapy.utils.project import get_project_settings
+from scrapy.exceptions import CloseSpider
 
 
-def setup_logger(name, log_file, level=logging.INFO):
-    handler = logging.FileHandler(log_file)
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
-
-# Setting up logging =============================================
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# info logger
-info_logger = setup_logger('info_logger', f'spider_info.log')
-# error  logger
-error_logger = setup_logger('error_logger', f'spider_error.log')
-# stat logger
-stat_logger = setup_logger('stat_logger', f'spider_stat.log')
-
+# Default logger for looging in cases when custom logger is unavailable
+default_logger = logging.getLogger(__name__)
 class RatesSpider(scrapy.Spider):
     name = "ratescrawler"
-    #header = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"}
+    header = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"}
     allowed_domains = ['eubank.kz']
 
     def start_requests(self):
         url = 'https://eubank.kz/exchange-rates/?lang=en'
-        info_logger.info(f'Parser started')
         yield scrapy.Request(url=url, callback=self.parse)
 
+    def __init__(self, *args, **kwargs):
+        # Access project settings for environment variables
+        self.settings=get_project_settings()
+        super(RatesSpider, self).__init__(*args, **kwargs)
 
-    def __init__(self):
-
-        self.cookies = {"TAUD":"LA-1604943341832-1*RDD-1-2020_11_09*RD-264330280-2020_11_12.21142557*HDD-3018576153-2020_12_27.2020_12_28*LG-3107446580-2.1.F.*LD-3107446581-.....*CUR-1-EUR",
-                        "TALanguage":"en"
-                        }
-        self.location_cnt = 0
-        self.num_rests = 0
-        self.reviews_cnt = 0
-        self.basic_url = "https://www.tripadvisor.com"
-        self.current_location_name = ''
-        self.current_location_url = ''
-
+        # Initiate logger and get settings for the Postgres connection
+        hostname = self.settings.get("PG_HOSTNAME")
+        username = self.settings.get('PG_USERNAME')
+        password = self.settings.get('PG_PASS')
+        log_database = self.settings.get('PG_LOGS_DB')
+        instance_name = 'rates_spider'
+        try:
+            self.cust_logger = PostgresHandler(hostname,username,password,log_database, instance_name)
+        except Exception as e:
+            default_logger.error(f"Error initializing CustomLogger to Postgres in {instance_name}")
+            raise CloseSpider(f"Error initializing CustomLogger to Postgres in {instance_name}")
     def parse(self, response):
         '''
         exchange_col contains
@@ -62,8 +49,7 @@ class RatesSpider(scrapy.Spider):
         There are 8 exchange_col's: 2 cols in each "operation_category"
         ("At exchange offices","In smartbank","For legal entities","Gold bars")
         '''
-        # self.logger.info('Parse function called on %s', response.url)
-        self.logger.info('User-Agent:  %s', response.request.headers['User-Agent'])
+
 
         rate_record_item = RatesItem()
 
@@ -73,7 +59,7 @@ class RatesSpider(scrapy.Spider):
             try:
                 rates_lst = response.xpath(f"(//table[@class='exchange-table'])[{i}]//descendant::span/text()").getall()
             except Exception as e:
-                error_logger.error(f"Error in the path for exchange-table")
+                self.cust_logger.log_error(f"Error in the path for exchange-table")
 
             # Getting timestamp for the data
             timestamp = datetime.now(timezone.utc)
@@ -107,30 +93,27 @@ class RatesSpider(scrapy.Spider):
 
                 yield rate_record_item
 
-
     def errback_httpbin(self, failure):
         # log all errback failures,
         # in case you want to do something special for some errors,
         # you may need the failure's type
-        self.logger.error(repr(failure))
-        error_logger.error(repr(failure))
+        self.cust_logger.log_error(repr(failure))
 
         #if isinstance(failure.value, HttpError):
         if failure.check(HttpError):
             # you can get the response
             response = failure.value.response
-            self.logger.error('HttpError on %s', response.url)
-            error_logger.error('HttpError on %s', response.url)
+            self.cust_logger.log_error(f'HttpError on {response.url}')
+
 
         #elif isinstance(failure.value, DNSLookupError):
         elif failure.check(DNSLookupError):
             # this is the original request
             request = failure.request
-            self.logger.error('DNSLookupError on %s', request.url)
-            error_logger.error('DNSLookupError on %s', request.url)
+            self.cust_logger.log_error(f'DNSLookupError on {request.url}')
+
 
         #elif isinstance(failure.value, TimeoutError):
         elif failure.check(TimeoutError):
             request = failure.request
-            self.logger.error('TimeoutError on %s', request.url)
-            error_logger.error('TimeoutError on %s', request.url)
+            self.cust_logger.log_error(f'TimeoutError on {request.url}')

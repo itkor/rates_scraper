@@ -55,7 +55,7 @@ class PostgresHandler(logging.Handler):
         cur.close()
 
     def log_error(self, item):
-        default_logger.error(f"Logging error item  {item}")
+        default_logger.error(f"Error:  {item}")
         self.log_item("ERROR", item)
 
     def log_info(self, item):
