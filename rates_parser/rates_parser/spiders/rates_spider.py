@@ -76,7 +76,7 @@ class RatesSpider(scrapy.Spider):
 
             operation_type = ''
             # operation_type choice
-            if i // 2 == 0:
+            if i % 2 == 1:
                 operation_type = 'Sell'
             else:
                 operation_type = 'Buy'
