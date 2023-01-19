@@ -12,76 +12,11 @@ from scrapy.exceptions import CloseSpider
 from PostgresLogger import PostgresHandler
 
 default_logger = logging.getLogger(__name__)
-class MongoPipeline:
-
-    # setting up mongo db and collections ===============================
-    mongo_uri = 'mongodb://localhost:27017/'
-    mongo_db = 'currency_rates'
-
-    client = pymongo.MongoClient(mongo_uri)
-    db = client[mongo_db]
-    collection_name = 'rates'
-    loc_collection = db[collection_name]
-
-    def __init__(self, mongo_uri, mongo_db):
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
-
-        self.logger = PostgresHandler()
-
-    def preprocess(self, item):
-        '''
-        Simple cleaning of data
-        :param item:
-        :return: item
-        '''
-        try:
-            item['rate'] = item['rate'].replace(',','.')
-        except Exception as e:
-            self.logger.log_error(f"Error while cleaning 'rate' value: {item['rate']}")
-
-        # Leave only digits and dots
-        item['rate'] = re.sub("[^0-9.]", "", item['rate'])
-        try:
-            item['rate'] = float(item['rate'])
-        except Exception as e:
-            self.logger.log_error(f"Error while converting 'rate' value: {item['rate']}")
-
-        return item
-
-    def process_item(self, item, spider):
-        # TODO: Add exception handling. Notifications of errors
-        item = self.preprocess(item)
-        self.db[self.collection_name].insert_one(dict(item))
-        return item
-
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        ## pull in information from settings.py
-        return cls(
-            mongo_uri=crawler.settings.get('MONGO_URI'),
-            mongo_db=crawler.settings.get('MONGO_DATABASE')
-        )
-    def open_spider(self, spider):
-        ## initializing spider
-        ## opening db connection to LOGS database
-        # self.logger.connect()
-
-        ## opening db connection
-        # TODO: Add exception handling. Notifications of errors
-        self.client = pymongo.MongoClient(self.mongo_uri)
-        self.db = self.client[self.mongo_db]
-
-    def close_spider(self, spider):
-        ## clean up when spider is closed
-        self.client.close()
-
-        ## Close cursor & connection to LOGS database
-        # self.logger.disconnect()
 
 class PostgresPipeline:
     def __init__(self, hostname, username, password, database, log_database):
+
+        self.instance_name = 'PostgresPipeline'
 
         self.hostname = hostname
         self.username = username
@@ -96,7 +31,7 @@ class PostgresPipeline:
             default_logger.error(f"Error while connecting to Postgres at: {self.hostname}")
             raise CloseSpider(f"Error while connecting to Postgres at: {self.hostname}")
 
-        self.logger = PostgresHandler(hostname,username,password,log_database, self.connection)
+        self.logger = PostgresHandler(hostname,username,password,log_database, self.instance_name)
 
         ## Create cursor, used to execute commands
         self.cur = self.connection.cursor()
@@ -141,7 +76,7 @@ class PostgresPipeline:
         # TODO: Add exception handling. Notifications of errors
         item = self.preprocess(item)
 
-        self.logger.log_info(f"Item was preprocessed: {item}")
+        # self.logger.log_info(f"Item was preprocessed: {item}")
 
         ## Define insert statement
         self.cur.execute(""" insert into public.rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )

@@ -67,7 +67,6 @@ LOG_LEVEL = 'WARNING'
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   # 'rates_parser.pipelines.MongoPipeline': 300,
    'rates_parser.pipelines.PostgresPipeline': 300,
 }
 
