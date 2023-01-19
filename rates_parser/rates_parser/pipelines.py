@@ -7,7 +7,7 @@ from datetime import datetime
 import pymongo
 import logging
 import re
-import psycopg as psycopg2
+import psycopg
 from scrapy.exceptions import CloseSpider
 from PostgresLogger import PostgresHandler
 
@@ -91,7 +91,7 @@ class PostgresPipeline:
 
         try:
             ## Create/Connect to database
-            self.connection = psycopg2.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
+            self.connection = psycopg.connect(host=self.hostname, user=self.username, password=self.password, dbname=self.database)
         except Exception as e:
             default_logger.error(f"Error while connecting to Postgres at: {self.hostname}")
             raise CloseSpider(f"Error while connecting to Postgres at: {self.hostname}")
@@ -115,6 +115,8 @@ class PostgresPipeline:
         """)
         # PRIMARY KEY(currency,operation_category, ts),
         # CONSTRAINT no_duplicate_tag UNIQUE (currency,operation_category, ts)
+
+        self.connection.commit()
     def preprocess(self, item):
         '''
         Simple cleaning of data
