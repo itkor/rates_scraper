@@ -2,9 +2,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-from datetime import datetime
 
-import pymongo
 import logging
 import re
 import psycopg
@@ -44,7 +42,8 @@ class PostgresPipeline:
             currency VARCHAR(10),
             currency_description VARCHAR(25),
             rate FLOAT(4), 
-            ts timestamp,
+            ts timestamp NOT NULL,
+            proc_flg BOOLEAN NOT NULL DEFAULT false,
             id SERIAL PRIMARY KEY
         )
         """)
@@ -79,8 +78,8 @@ class PostgresPipeline:
         # self.logger.log_info(f"Item was preprocessed: {item}")
 
         ## Define insert statement
-        self.cur.execute(""" insert into public.rates_raw (operation_category, operation_type, currency, currency_description, rate,ts )
-         values (%s,%s,%s,%s,%s,%s)""", (
+        self.cur.execute(""" insert into public.rates_raw (operation_category, operation_type, currency, currency_description, rate,ts, proc_flg )
+         values (%s,%s,%s,%s,%s,%s, default)""", (
             str(item["operation_category"]),
             str(item["operation_type"]),
             str(item["currency"]),
